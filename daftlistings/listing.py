@@ -90,7 +90,8 @@ class Listing:
 
     @property
     def images(self):
-        return self._result["media"]["images"]
+        if 'images' in self._result["media"]:
+            return self._result["media"]["images"]
 
     @property
     def brochure(self):
