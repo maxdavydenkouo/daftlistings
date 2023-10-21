@@ -1,7 +1,7 @@
 from datetime import datetime
 from urllib.parse import urljoin
 from math import radians, sin, cos, asin, sqrt
-
+import re
 
 class Listing:
     _BASEURL = "http://www.daft.ie"
@@ -54,6 +54,7 @@ class Listing:
             postionOfEuroSign = price_str.find("€")
             price_str = price_str[postionOfEuroSign:].replace(",", "")
             str_array = price_str.lower().split()
+            str_array[0] = str_array[0].replace(")", "")
             price_num = int(str_array[0][1:])
             if "week" == str_array[-1]:
                 price_num = int(price_num * 30 / 7)
