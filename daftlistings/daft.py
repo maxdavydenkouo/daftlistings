@@ -1,5 +1,7 @@
 import re
+import json
 import requests
+import http.client
 from typing import Union, Optional, List, Dict
 from math import ceil
 from difflib import SequenceMatcher
@@ -11,6 +13,8 @@ from .location import Location
 
 
 class Daft:
+    _DOMAIN = "search-gateway.dsch.ie"
+    _ENDPOINT_WITHOUT_DOMAIN = "/v1/listings"
     _ENDPOINT = "https://search-gateway.dsch.ie/v1/listings"
     _HEADER = {"Content-Type": "application/json", "brand": "daft", "platform": "web"}
     _PAGE_SZ = 50
@@ -252,16 +256,35 @@ class Daft:
     def search(self, max_pages: Optional[int] = None) -> List[Listing]:
         print("Searching...")
         _payload = self._make_payload()
-        r = requests.post(self._ENDPOINT, headers=self._HEADER, json=_payload)
-        listings = r.json()["listings"]
-        results_count = r.json()["paging"]["totalResults"]
+
+        # r = requests.post(self._ENDPOINT, headers=self._HEADER, json=_payload)
+        conn = http.client.HTTPSConnection(self._DOMAIN)
+        conn.request("POST", self._ENDPOINT_WITHOUT_DOMAIN, json.dumps(_payload), self._HEADER)
+        response = conn.getresponse()
+        result = response.read()
+        r = json.loads(result)
+
+        # listings = r.json()["listings"]
+        listings = r["listings"]
+
+        # results_count = r.json()["paging"]["totalResults"]
+        results_count = r["paging"]["totalResults"]
+
         total_pages = ceil(results_count / self._PAGE_SZ)
         limit = min(max_pages, total_pages) if max_pages else total_pages
 
         for page in range(1, limit):
             _payload["paging"]["from"] = page * self._PAGE_SZ
-            r = requests.post(self._ENDPOINT, headers=self._HEADER, json=_payload)
-            listings = listings + r.json()["listings"]
+
+            # r = requests.post(self._ENDPOINT, headers=self._HEADER, json=_payload)
+            conn = http.client.HTTPSConnection(self._DOMAIN)
+            conn.request("POST", self._ENDPOINT_WITHOUT_DOMAIN, json.dumps(_payload), self._HEADER)
+            response = conn.getresponse()
+            result = response.read()
+            r = json.loads(result)
+
+            # listings = listings + r.json()["listings"]
+            listings = listings + r["listings"]
 
         # expand out grouped listings as individual listings, commercial searches do not give the necessary information to do this
 
